@@ -1,0 +1,467 @@
+{
+  "name": "01 - Enterprise RAG Pipeline",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "triggerOn": "specificFolder",
+        "folderToWatch": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_DRIVE_FOLDER_ID",
+          "mode": "list"
+        },
+        "event": "fileCreated",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDriveTrigger",
+      "typeVersion": 1,
+      "position": [
+        -768,
+        0
+      ],
+      "id": "a5f822a2-872b-4415-a273-407639ec40a2",
+      "name": "Google Drive File Trigger",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "Google Drive OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -560,
+        0
+      ],
+      "id": "d5eebf08-cc73-4feb-a397-600f7e9a6aae",
+      "name": "Download Knowledge Document",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "Google Drive OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "pineconeIndex": {
+          "__rl": true,
+          "value": "YOUR_PINECONE_INDEX",
+          "mode": "list"
+        },
+        "options": {
+          "pineconeNamespace": "knowledge_base"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePinecone",
+      "typeVersion": 1,
+      "position": [
+        192,
+        -16
+      ],
+      "id": "cec70faa-e30c-4ffe-a073-67aea7df16ec",
+      "name": "Pinecone Knowledge Index",
+      "credentials": {
+        "pineconeApi": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "Pinecone account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        192,
+        160
+      ],
+      "id": "1fab3a09-c957-4bdf-b8e1-9fceb856fc08",
+      "name": "OpenAI Embeddings",
+      "credentials": {
+        "openAiApi": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "dataType": "binary",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1,
+      "position": [
+        176,
+        304
+      ],
+      "id": "68dce31b-ab42-4f89-bb23-c3c9be882c7e",
+      "name": "Document Loader"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "183d4bfd-a511-4652-a968-e37780115e86",
+              "name": "source_file",
+              "value": "={{ $json.name }}",
+              "type": "string"
+            },
+            {
+              "id": "325b7793-94c8-4746-8211-1a1818fd7d1f",
+              "name": "google_drive_file_id",
+              "value": "={{ $json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "bd54d06c-aa92-4237-88f9-d973627d9c60",
+              "name": "uploaded_at",
+              "value": "={{ $now }}",
+              "type": "string"
+            },
+            {
+              "id": "d99d0c8b-8f90-4b53-8f45-3c33ebd8a0ef",
+              "name": "document_source",
+              "value": "google_drive",
+              "type": "string"
+            },
+            {
+              "id": "28f0a0b0-2de7-41e8-8b11-4a5fc91ea8bb",
+              "name": "rag_namespace",
+              "value": "goldsmith_knowledge_base",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -352,
+        0
+      ],
+      "id": "5ed43a4e-8b8e-4404-85d7-e897bdd93ef4",
+      "name": "Prepare Document Metadata"
+    },
+    {
+      "parameters": {
+        "chunkSize": 1000,
+        "chunkOverlap": 150,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        272,
+        448
+      ],
+      "id": "fc6296eb-3e4b-430a-9b92-78369a8a6f71",
+      "name": "Semantic Text Chunker"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "ee9636e9-0b9b-4b19-8655-fd93421e5c08",
+              "leftValue": "={{ $json.source_file }}",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -144,
+        0
+      ],
+      "id": "bb86b5a0-c552-4e7a-a3b5-9f53a82426e3",
+      "name": "Document Change Detector"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        -112,
+        256
+      ],
+      "id": "a0163611-167b-4e26-b116-ba3fbd7d1e82",
+      "name": "Ignore Duplicate Upload"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEET_ID",
+          "mode": "list"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "source_file": "={{ $json.source_file }}",
+            "uploaded_at": "={{ $json.uploaded_at }}",
+            "google_drive_file_id": "={{ $json.google_drive_file_id }}",
+            "rag_namespace": "={{ $json.rag_namespace }}",
+            "ingestion_status": "completed",
+            "chunking_strategy": "recursive_1000_150",
+            "embedding_model": "openai_embeddings",
+            "processing_timestamp": "={{ $now }}",
+            "pipeline_stage": "vector_indexed"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "source_file",
+              "displayName": "source_file",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "uploaded_at",
+              "displayName": "uploaded_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "google_drive_file_id",
+              "displayName": "google_drive_file_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "rag_namespace",
+              "displayName": "rag_namespace",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ingestion_status",
+              "displayName": "ingestion_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "chunking_strategy",
+              "displayName": "chunking_strategy",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "embedding_model",
+              "displayName": "embedding_model",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "processing_timestamp",
+              "displayName": "processing_timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "pipeline_stage",
+              "displayName": "pipeline_stage",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        544,
+        -16
+      ],
+      "id": "eccc0378-8607-4835-a537-413fe8809b06",
+      "name": "Log Ingestion Event",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "Google Sheets OAuth2 API"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Google Drive File Trigger": {
+      "main": [
+        [
+          {
+            "node": "Download Knowledge Document",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Knowledge Document": {
+      "main": [
+        [
+          {
+            "node": "Prepare Document Metadata",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Embeddings": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Pinecone Knowledge Index",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Document Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Pinecone Knowledge Index",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Semantic Text Chunker": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Document Loader",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Document Metadata": {
+      "main": [
+        [
+          {
+            "node": "Document Change Detector",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Document Change Detector": {
+      "main": [
+        [
+          {
+            "node": "Pinecone Knowledge Index",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Ignore Duplicate Upload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pinecone Knowledge Index": {
+      "main": [
+        [
+          {
+            "node": "Log Ingestion Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "id": "g5R5Mt1zafVjACXw",
+  "tags": []
+}

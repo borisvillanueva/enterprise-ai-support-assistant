@@ -1,0 +1,341 @@
+{
+  "name": "02 - Enterprise AI Support Assistant",
+  "nodes": [
+    {
+      "parameters": {
+        "public": true,
+        "initialMessages": "Welcome to the Gold Digger AI Support Assistant. How can I assist you today?",
+        "options": {
+          "inputPlaceholder": "How can I assist you today?",
+          "loadPreviousSession": "notSupported",
+          "showWelcomeScreen": true,
+          "getStarted": "Start Support Session",
+          "subtitle": "AI-powered customer support with enterprise knowledge retrieval and conversational assistance.",
+          "title": "Gold Digger AI Support Assistant"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -368,
+        -48
+      ],
+      "id": "1d562d79-fdbc-4f70-8c78-11ddabfd0e50",
+      "name": "Customer Chat Entry"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "YOUR_OPENAI_MODEL",
+          "mode": "list"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -368,
+        176
+      ],
+      "id": "e29b4c95-c63d-48ef-bfa3-a4e4db5e2b27",
+      "name": "Primary AI Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "OpenAI account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "contextWindowLength": 12
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        -208,
+        160
+      ],
+      "id": "6507694a-ff05-4be3-9475-2df9a432a409",
+      "name": "Conversation Memory"
+    },
+    {
+      "parameters": {
+        "name": "enterprise_knowledge_retrieval",
+        "description": "Retrieves verified business information, services, policies, product details, and customer support knowledge from the enterprise knowledge base."
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolVectorStore",
+      "typeVersion": 1,
+      "position": [
+        -64,
+        144
+      ],
+      "id": "77778214-5b56-4462-83de-dfdc2a838dd3",
+      "name": "Knowledge Retrieval Tool"
+    },
+    {
+      "parameters": {
+        "pineconeIndex": {
+          "__rl": true,
+          "value": "YOUR_PINECONE_INDEX",
+          "mode": "list"
+        },
+        "options": {
+          "pineconeNamespace": "knowledge_base"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePinecone",
+      "typeVersion": 1,
+      "position": [
+        -128,
+        304
+      ],
+      "id": "1adcbbaa-bf88-479d-9e69-68f0291d4d59",
+      "name": "Enterprise Knowledge Base",
+      "credentials": {
+        "pineconeApi": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "Pinecone account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "YOUR_OPENAI_MODEL",
+          "mode": "list"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        176,
+        320
+      ],
+      "id": "179f1b71-1a71-4016-8854-380f0f93f5bc",
+      "name": "Retrieval QA Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "OpenAI account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -144,
+        432
+      ],
+      "id": "5ba91661-02ad-43da-9135-5ec5ab8f15b5",
+      "name": "Query Embeddings",
+      "credentials": {
+        "openAiApi": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "OpenAI account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEET_ID",
+          "mode": "list"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Name  ": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Name__', ``, 'string') }}",
+            "Phone": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Phone', ``, 'string') }}",
+            "Email": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Email', ``, 'string') }}",
+            "Interested in": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Interested_in', ``, 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Name  ",
+              "displayName": "Name  ",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Phone",
+              "displayName": "Phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Interested in",
+              "displayName": "Interested in",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.5,
+      "position": [
+        304,
+        144
+      ],
+      "id": "dd4d9077-66a4-4588-acd3-bf9e93612fe1",
+      "name": "Lead Capture Database",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "Google Sheets OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "=# Role\n\nYou are an AI-powered customer support assistant for Gold Digger.\n\nYour role is to help customers with accurate business information, products, services, pricing questions, locations, policies, and general support inquiries using the available knowledge base tools.\n\n# Behavior Rules\n\n- Always prioritize factual accuracy over sounding confident.\n- Use the Knowledge Retrieval Tool whenever the question requires company-specific information.\n- If the knowledge base does not contain enough information, clearly say so.\n- Never invent policies, pricing, or business details.\n- Keep responses professional, concise, and helpful.\n- Maintain conversational continuity using memory when appropriate.\n\n# Retrieval and Trust Rules\n\n- Base answers only on retrieved business knowledge.\n- When possible, reference the source document or uploaded knowledge context.\n- If confidence is low or no relevant context is found, respond with:\n\n\"I could not locate verified information in the current knowledge base for that request.\"\n\n- Do not hallucinate or guess missing information.\n\nWhen retrieved information is available, summarize the information clearly and reference it as coming from the business knowledge base or company documentation.\n\n# Lead Qualification Logic\n\nDo not immediately ask for contact information.\n\nOnly ask for lead information AFTER:\n- the customer has received value from the conversation\n- the customer expresses purchase intent\n- the customer asks about pricing, appointments, custom orders, or follow-up support\n\nWhen appropriate, politely ask for:\n- name\n- email\n- phone number\n- area of interest\n\nThen store the information using the Lead Capture Database tool.\n\nWhen offering specialist follow-up, politely request the customer's contact information and area of interest so the business team can continue the conversation.\n\n# Tone\n\n- Professional\n- Helpful\n- Trustworthy\n- Business-oriented\n- Not overly casual\n\nIf a customer expresses strong purchase intent or interest in custom services, you may politely offer to connect them with a specialist even if pricing information is unavailable in the knowledge base.\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        -144,
+        -48
+      ],
+      "id": "53ab4f44-a9b6-4d26-a125-a383befc1947",
+      "name": "Enterprise Support Orchestrator"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Customer Chat Entry": {
+      "main": [
+        [
+          {
+            "node": "Enterprise Support Orchestrator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Primary AI Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Enterprise Support Orchestrator",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Conversation Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "Enterprise Support Orchestrator",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Knowledge Retrieval Tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "Enterprise Support Orchestrator",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enterprise Knowledge Base": {
+      "ai_vectorStore": [
+        [
+          {
+            "node": "Knowledge Retrieval Tool",
+            "type": "ai_vectorStore",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Retrieval QA Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Knowledge Retrieval Tool",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Query Embeddings": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Enterprise Knowledge Base",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lead Capture Database": {
+      "ai_tool": [
+        [
+          {
+            "node": "Enterprise Support Orchestrator",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "id": "wOKOlaKXPSOxKgrf",
+  "tags": []
+}
